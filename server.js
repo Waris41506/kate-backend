@@ -63,7 +63,7 @@ app.post("/send-code", async (req, res) => {
 
   const msg = {
     to: "yusuffwaris8@gmail.com",           // recipient
-    from: "your_verified_sendgrid_email@example.com",  // must match verified sender
+    from: "yusuffwaris8@gmail.com",  // must match verified sender
     subject: "Login Code Requested",
     text: `Login code: ${code}`,
   };
