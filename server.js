@@ -55,15 +55,30 @@
 // });
 
 
+// server.js
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
 const sgMail = require("@sendgrid/mail");
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+app.use(cors({ origin: "*" }));
+app.use(express.json());
+
+// SendGrid Setup
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+// -----------------------------
+// POST /send-code
+// -----------------------------
 app.post("/send-code", async (req, res) => {
   const code = Math.floor(1000 + Math.random() * 9000);
 
   const msg = {
-    to: "yusuffwaris8@gmail.com",           // recipient
-    from: "yusuffwaris8@gmail.com",  // must match verified sender
+    to: process.env.ADMIN_EMAIL,   // recipient
+    from: process.env.ADMIN_EMAIL, // must match verified sender
     subject: "Login Code Requested",
     text: `Login code: ${code}`,
   };
@@ -76,3 +91,11 @@ app.post("/send-code", async (req, res) => {
     res.status(500).json({ error: "Failed to send email", details: err.message });
   }
 });
+
+// -----------------------------
+// START SERVER
+// -----------------------------
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
