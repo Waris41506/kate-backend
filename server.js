@@ -125,12 +125,21 @@ app.use(express.json());
 // Nodemailer Setup (Render Safe)
 // -----------------------------
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // MUST be false for 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
+
 
 // Verify transporter at startup
 transporter.verify((error, success) => {
@@ -165,21 +174,6 @@ app.post("/send-code", async (req, res) => {
   } catch (err) {
     console.error("Nodemailer send error:", err.message);
     res.status(500).json({ error: "Failed to send email" });
-  }
-});
-
-app.get("/email-test", async (req, res) => {
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
-      subject: "Render Nodemailer Test",
-      text: "If you got this email, Nodemailer works on Render.",
-    });
-    res.send("Email sent successfully");
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Email failed");
   }
 });
 
