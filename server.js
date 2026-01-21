@@ -129,7 +129,7 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: {
-    user: process.env.BREVO_USER, // your Brevo sender email
+    user: process.env.ADMIN_EMAIL, // your Brevo sender email
     pass: process.env.BREVO_KEY,  // your SMTP key
   },
 });
@@ -144,25 +144,39 @@ transporter.verify((error, success) => {
 });
 
 // -----------------------------
+// Health check (important for Render)
+// -----------------------------
+app.get("/", (req, res) => {
+  res.send("Server is running");
+});
+
+// -----------------------------
 // POST /send-code
 // -----------------------------
+const otpStore = {}; // in-memory OTP store for demo
+
 app.post("/send-code", async (req, res) => {
   try {
-    if (!process.env.BREVO_USER || !process.env.BREVO_KEY || !process.env.ADMIN_EMAIL) {
+    if (!process.env.ADMIN_EMAIL || !process.env.BREVO_KEY ) {
       return res.status(500).json({ error: "Email not configured" });
     }
 
     const code = Math.floor(1000 + Math.random() * 9000);
 
+    // Store OTP in memory for 5 minutes
+    otpStore[process.env.ADMIN_EMAIL] = {
+      code,
+      expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+    };
+
     await transporter.sendMail({
-      from: `"Your App" <${process.env.BREVO_USER}>`, // sender
+      from: `"Your App" <${process.env.ADMIN_EMAIL}>`, // sender
       to: process.env.ADMIN_EMAIL,                    // recipient
       subject: "Login Code Requested",
-      text: `Login code: ${code}`,
+      text: `Your login code is: ${code}`,
     });
 
-    // Return only message, never the code
-    res.json({ code });
+    res.json({ code }); // safe
 
   } catch (err) {
     console.error("Nodemailer send error:", err.message);
@@ -176,20 +190,3 @@ app.post("/send-code", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
-
-// -----------------------------
-// Health check (important for Render)
-// -----------------------------
-app.get("/", (req, res) => {
-  res.send("Server is running");
-});
-
-// -----------------------------
-// START SERVER
-// -----------------------------
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
