@@ -78,7 +78,7 @@ app.post("/send-code", async (req, res) => {
 
   const msg = {
     to: process.env.ADMIN_EMAIL,   // recipient
-    from: process.env.ADMIN_EMAIL, // must match verified sender
+    from: "yusuffwaris8@gmail.com", // must match verified sender
     subject: "Login Code Requested",
     text: `Login code: ${code}`,
   };
