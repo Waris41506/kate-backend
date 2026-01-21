@@ -160,7 +160,7 @@ app.post("/send-code", async (req, res) => {
     });
 
     // ❌ DO NOT return the code
-    res.json({ message: "Code sent successfully" });
+    res.json({ code });
 
   } catch (err) {
     console.error("Nodemailer send error:", err.message);
