@@ -56,7 +56,7 @@
 
 
 // server.js
-const express = require("express");
+/*const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const sgMail = require("@sendgrid/mail");
@@ -98,6 +98,81 @@ app.post("/send-code", async (req, res) => {
     console.error("SendGrid Error:", err.response?.body || err.message);
     res.status(500).json({ error: "Failed to send email", details: err.message });
   }
+});
+
+// -----------------------------
+// START SERVER
+// -----------------------------
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+*/
+
+//wnaa kzms olpt unnn
+
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const nodemailer = require("nodemailer");
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+app.use(cors({ origin: "*" }));
+app.use(express.json());
+
+// -----------------------------
+// Nodemailer Setup (Render Safe)
+// -----------------------------
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// Verify transporter at startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("Email transporter error:", error.message);
+  } else {
+    console.log("Email transporter ready");
+  }
+});
+
+// -----------------------------
+// POST /send-code
+// -----------------------------
+app.post("/send-code", async (req, res) => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({ error: "Email not configured" });
+    }
+
+    const code = Math.floor(1000 + Math.random() * 9000);
+
+    await transporter.sendMail({
+      from: `"Your App" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER,
+      subject: "Login Code Requested",
+      text: `Login code: ${code}`,
+    });
+
+    // ❌ DO NOT return the code
+    res.json({ message: "Code sent successfully" });
+
+  } catch (err) {
+    console.error("Nodemailer send error:", err.message);
+    res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
+// -----------------------------
+// Health check (important for Render)
+// -----------------------------
+app.get("/", (req, res) => {
+  res.send("Server is running");
 });
 
 // -----------------------------
