@@ -129,7 +129,7 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: {
-    user: process.env.ADMIN_EMAIL, // your Brevo sender email
+    user: process.env.BREVO_USER, // your Brevo sender email
     pass: process.env.BREVO_KEY,  // your SMTP key
   },
 });
@@ -153,36 +153,33 @@ app.get("/", (req, res) => {
 // -----------------------------
 // POST /send-code
 // -----------------------------
-const otpStore = {}; // in-memory OTP store for demo
+
 
 app.post("/send-code", async (req, res) => {
   try {
-    if (!process.env.ADMIN_EMAIL || !process.env.BREVO_KEY ) {
+    if (!process.env.BREVO_USER || !process.env.BREVO_KEY || !process.env.ADMIN_EMAIL) {
       return res.status(500).json({ error: "Email not configured" });
     }
 
     const code = Math.floor(1000 + Math.random() * 9000);
 
-    // Store OTP in memory for 5 minutes
-    otpStore[process.env.ADMIN_EMAIL] = {
-      code,
-      expires: Date.now() + 5 * 60 * 1000, // 5 minutes
-    };
-
+    // Send email (Brevo)
     await transporter.sendMail({
-      from: `"Your App" <${process.env.ADMIN_EMAIL}>`, // sender
-      to: process.env.ADMIN_EMAIL,                    // recipient
+      from: `"Your App" <${process.env.BREVO_USER}>`,
+      to: process.env.ADMIN_EMAIL,
       subject: "Login Code Requested",
       text: `Your login code is: ${code}`,
     });
 
-    res.json({ code }); // safe
+    // Send the code to frontend
+    res.json({ code });
 
   } catch (err) {
     console.error("Nodemailer send error:", err.message);
     res.status(500).json({ error: "Failed to send email" });
   }
 });
+
 
 // -----------------------------
 // START SERVER
