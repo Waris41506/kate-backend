@@ -73,8 +73,16 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 // -----------------------------
 // POST /send-code
 // -----------------------------
+if (!process.env.SENDGRID_API_KEY || !process.env.ADMIN_EMAIL) {
+  console.error("Missing environment variables");
+}
+
 app.post("/send-code", async (req, res) => {
   const code = Math.floor(1000 + Math.random() * 9000);
+
+  if (!process.env.ADMIN_EMAIL) {
+  return res.status(500).json({ error: "Email config error" });
+}
 
   const msg = {
     to: process.env.ADMIN_EMAIL,   // recipient
@@ -87,7 +95,7 @@ app.post("/send-code", async (req, res) => {
     await sgMail.send(msg);
     res.json({ code });
   } catch (err) {
-    console.error("SendGrid Error:", err);
+    console.error("SendGrid Error:", err.response?.body || err.message);
     res.status(500).json({ error: "Failed to send email", details: err.message });
   }
 });
