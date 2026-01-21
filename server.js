@@ -168,6 +168,22 @@ app.post("/send-code", async (req, res) => {
   }
 });
 
+app.get("/email-test", async (req, res) => {
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: "Render Nodemailer Test",
+      text: "If you got this email, Nodemailer works on Render.",
+    });
+    res.send("Email sent successfully");
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Email failed");
+  }
+});
+
+
 // -----------------------------
 // Health check (important for Render)
 // -----------------------------
