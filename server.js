@@ -122,24 +122,17 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 // -----------------------------
-// Nodemailer Setup (Render Safe)
+// Nodemailer Setup (Brevo SMTP)
 // -----------------------------
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "smtp-relay.brevo.com",
   port: 587,
-  secure: false, // MUST be false for 587
+  secure: false,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.BREVO_USER, // your Brevo sender email
+    pass: process.env.BREVO_KEY,  // your SMTP key
   },
-  tls: {
-    rejectUnauthorized: false,
-  },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
 });
-
 
 // Verify transporter at startup
 transporter.verify((error, success) => {
@@ -155,20 +148,20 @@ transporter.verify((error, success) => {
 // -----------------------------
 app.post("/send-code", async (req, res) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!process.env.BREVO_USER || !process.env.BREVO_KEY || !process.env.ADMIN_EMAIL) {
       return res.status(500).json({ error: "Email not configured" });
     }
 
     const code = Math.floor(1000 + Math.random() * 9000);
 
     await transporter.sendMail({
-      from: `"Your App" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
+      from: `"Your App" <${process.env.BREVO_USER}>`, // sender
+      to: process.env.ADMIN_EMAIL,                    // recipient
       subject: "Login Code Requested",
       text: `Login code: ${code}`,
     });
 
-    // ❌ DO NOT return the code
+    // Return only message, never the code
     res.json({ code });
 
   } catch (err) {
@@ -176,6 +169,14 @@ app.post("/send-code", async (req, res) => {
     res.status(500).json({ error: "Failed to send email" });
   }
 });
+
+// -----------------------------
+// START SERVER
+// -----------------------------
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 
 
 // -----------------------------
