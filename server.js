@@ -112,78 +112,57 @@ app.listen(PORT, () => {
 
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-const nodemailer = require("nodemailer");
+const axios = require("axios");
+require("dotenv").config(); // Must be at the top
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({ origin: "*" }));
+app.use(cors());
 app.use(express.json());
 
-// -----------------------------
-// Nodemailer Setup (Brevo SMTP)
-// -----------------------------
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER, // your Brevo sender email
-    pass: process.env.BREVO_KEY,  // your SMTP key
-  },
-});
+// Health check
+app.get("/", (req, res) => res.send("Server is running"));
 
-// Verify transporter at startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email transporter error:", error.message);
-  } else {
-    console.log("Email transporter ready");
-  }
-});
-
-// -----------------------------
-// Health check (important for Render)
-// -----------------------------
-app.get("/", (req, res) => {
-  res.send("Server is running");
-});
-
-// -----------------------------
 // POST /send-code
-// -----------------------------
-
-
 app.post("/send-code", async (req, res) => {
+  // DEBUG: print environment variables
+  console.log("BREVO_API_KEY =", process.env.BREVO_API_KEY);
+  console.log("ADMIN_EMAIL =", process.env.ADMIN_EMAIL);
+
+  // Check environment variables
+  if (!process.env.BREVO_API_KEY || !process.env.ADMIN_EMAIL) {
+    return res.status(500).json({ error: "Email not configured" });
+  }
+
+  const code = Math.floor(1000 + Math.random() * 9000);
+
   try {
-    if (!process.env.BREVO_USER || !process.env.BREVO_KEY || !process.env.ADMIN_EMAIL) {
-      return res.status(500).json({ error: "Email not configured" });
-    }
+    const response = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: { email: "yusuffwaris8@gmail.com", name: "Your App" },
+        to: [{ email: process.env.ADMIN_EMAIL, name: "Your Name" }],
+        subject: "Login Code Requested",
+        textContent: `Your login code is: ${code}`,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    const code = Math.floor(1000 + Math.random() * 9000);
-
-    // Send email (Brevo)
-    await transporter.sendMail({
-      from: `"Your App" <${process.env.BREVO_USER}>`,
-      to: process.env.ADMIN_EMAIL,
-      subject: "Login Code Requested",
-      text: `Your login code is: ${code}`,
-    });
-
-    // Send the code to frontend
+    console.log("Brevo response:", response.data);
     res.json({ code });
 
   } catch (err) {
-    console.error("Nodemailer send error:", err.message);
+    console.error("Brevo API error:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed to send email" });
   }
 });
 
+// Start server
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-// -----------------------------
-// START SERVER
-// -----------------------------
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
